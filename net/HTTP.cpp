@@ -25,14 +25,14 @@ void net::HTTP::readHeaders(net::TCPSocket &socket) {
         if (line == "")
             break;
 
-        for (auto &x : line)
-            x = tolower(x);
-
         int pos = line.find_first_of(":");
         if (pos == std::string::npos)
             throw std::runtime_error("Invalid header (" + line + ")");
 
         std::string header = trim(line.substr(0, pos));
+
+        for (auto &x : header)
+            x = tolower(x);
         std::string value = trim(line.substr(pos+1));
 
         headers[header] = value;
