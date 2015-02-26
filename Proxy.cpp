@@ -2,6 +2,7 @@
 
 #include <map>
 #include <iostream>
+#include <algorithm>
 #include <sstream>
 
 #include "net/HTTP.hpp"
@@ -13,6 +14,7 @@ Proxy::Proxy(net::TCPSocket &&socket, HTTPTransform &transformations) :
 }
 
 void Proxy::run() {
+
     net::HTTP request, response;
 
     request.read(client);
@@ -28,16 +30,10 @@ void Proxy::run() {
     response.readRequestLine(server);
     response.readHeaders(server);
 
-    std::string type = response.getHeaders()["content-type"];
-    bool found = false;
-    for (auto &modType : modifyableTypes) {
-        if (type.find(modType) != std::string::npos) {
-            found = true;
-            break;
-        }
-    }
-
-    if (found) {
+    auto contentTypeIt = response.getHeaders().find("content-type");
+    if (contentTypeIt != response.getHeaders().end() && std::any_of(modifyableTypes.begin(),
+                modifyableTypes.end(),
+                [&contentTypeIt] (std::string type) {return type == contentTypeIt->second;})) {
         response.readContent(server);
         transformations.transformResponse(response);
         response.fixContentLength();

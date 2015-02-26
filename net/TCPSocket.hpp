@@ -14,6 +14,9 @@ namespace net
             TCPSocket(TCPSocket &&x);
             TCPSocket(int fd);
             ~TCPSocket();
+            bool canRead() const;
+            bool canWrite() const;
+            void close();
             void bind(int port);
             void listen(int n);
             TCPSocket accept();
@@ -22,7 +25,6 @@ namespace net
             void writeLine(const std::string &data);
             std::string read(int amount);
             std::string readLine();
-            std::string readUntilClose();
 
         private:
             int fd;

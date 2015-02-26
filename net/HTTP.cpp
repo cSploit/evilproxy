@@ -62,8 +62,9 @@ void net::HTTP::readContent(net::TCPSocket &socket) {
         converter >> size;
 
         content = socket.read(size);
-    } else if (getVersion() == "1.0") {
-        content = socket.readUntilClose();
+    } else if (getType() == net::HTTP::Type::Response) {
+        while (socket.canRead())
+            content += socket.read(8192);
     }
 }
 
@@ -95,7 +96,6 @@ void net::HTTP::streamContent(net::TCPSocket &from, net::TCPSocket &to) {
     int size = 1;
 
     if (isChunkedEncoded()) {
-        std::cout << "CHUNKED " << requestLine << std::endl;
         while (size) {
 
             std::string line = trim(from.readLine());
@@ -111,12 +111,16 @@ void net::HTTP::streamContent(net::TCPSocket &from, net::TCPSocket &to) {
         converter >> size;
 
         while(size > 0) {
-            to.write(from.read(std::min(8192, size)));
-            size -= 8192;
+            std::string tmpString = from.read(std::min(8192, size));
+            if (!tmpString.length())
+                break;
+            to.write(tmpString);
+            size -= tmpString.length();
         }
-
-    } else if (getVersion() == "1.0") {
-     //TODO add HTTP 1.0 streaming   
+    } else if (getType() == net::HTTP::Type::Response) {
+        while (from.canRead()) {
+            to.write(from.read(8192));
+        }
     }
 }
 
@@ -134,19 +138,22 @@ std::string & net::HTTP::getContent() {
     return content;
 }
 
+net::HTTP::Type net::HTTP::getType() {
+    if (requestLine.substr(0, 4) == "HTTP")
+        return net::HTTP::Type::Response;
+    else
+        return net::HTTP::Type::Request;
+}
+
 bool net::HTTP::isChunkedEncoded() {
     auto transfer = headers.find("transfer-encoding");
     return (transfer != headers.end() && transfer->second == "chunked");
 }
 
-std::string net::HTTP::getVersion() {
-    return requestLine.substr(requestLine.find("HTTP/")+5, 3);
-}
-
 std::string net::HTTP::trim(std::string str) {
     std::string whitespaces = "\r\n\t ";
     str.erase(0, str.find_first_not_of(whitespaces));
-    int pos = str.find_last_not_of(whitespaces);
+    auto pos = str.find_last_not_of(whitespaces);
     if (pos != std::string::npos)
         str.erase(pos+1);
     return str;

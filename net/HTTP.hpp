@@ -6,7 +6,6 @@
 
 namespace net
 {
-
     class HTTP {
         public:
             void read(TCPSocket &socket);
@@ -26,14 +25,18 @@ namespace net
             std::map<std::string, std::string> & getHeaders();
             std::string & getContent();
         private:
+            enum class Type;
+
+            Type getType();
             bool isChunkedEncoded();
-            std::string getVersion();
 
             std::string trim(std::string str);
 
             std::string requestLine;
             std::map<std::string, std::string> headers;
             std::string content;
+
+            enum class Type {Request, Response};
     };
 
 }
