@@ -99,9 +99,10 @@ std::string net::TCPSocket::read(int amount) {
     int done = 0;
 
     while (done < amount && canRead()) {
+        if (inputstream->eof())
+            doRead();
         inputstream->read(buffer+done, amount-done);
         done += inputstream->gcount();
-        doRead();
     }
     std::string ret = std::string(buffer, done);
     delete buffer;
@@ -113,7 +114,7 @@ std::string net::TCPSocket::readLine() {
 
     getline(*inputstream, ret);
 
-    while(inputstream->eof()) {
+    while(inputstream->eof() && canRead()) {
         doRead();
         getline(*inputstream, line);
         ret += line;
