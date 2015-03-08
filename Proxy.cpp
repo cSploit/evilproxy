@@ -15,34 +15,57 @@ Proxy::Proxy(net::TCPSocket &&socket, HTTPTransform &transformations) :
 
 void Proxy::run() {
 
-    net::HTTP request, response;
+    try {
+        std::string host;
 
-    request.read(client);
+        for (;;) {
+            net::HTTP request, response;
 
-    request.getHeaders()["accept-encoding"] = "identity";
-    request.getHeaders()["connection"] = "close";
+            request.read(client);
 
-    net::TCPSocket server;
-    server.connect(request.getHeaders()["host"], "80");
+            // Client could close connection in the meantime
+            if (request.getRequestLine().empty())
+                return;
 
-    request.write(server);
+            request.getHeaders()["accept-encoding"] = "identity";
 
-    response.readRequestLine(server);
-    response.readHeaders(server);
+            if (host.empty()) {
+                host = request.getHeaders()["host"];
+                server.connect(host, "80");
+                std::cout << host << std::endl;
+            }
 
-    auto contentTypeIt = response.getHeaders().find("content-type");
-    if (contentTypeIt != response.getHeaders().end() && std::any_of(modifyableTypes.begin(),
-                modifyableTypes.end(),
-                [&contentTypeIt] (std::string type) {return type == contentTypeIt->second;})) {
-        response.readContent(server);
-        transformations.transformResponse(response);
-        response.fixContentLength();
-        response.write(client);
-    } else {
-        response.writeRequestLine(client);
-        response.writeHeaders(client);
+            request.write(server);
 
-        response.streamContent(server, client);
+            response.readRequestLine(server);
+            // Server could close connection in the meantime
+            if (response.getRequestLine().empty())
+                return;
+
+            response.readHeaders(server);
+
+            auto contentTypeIt = response.getHeaders().find("content-type");
+            if (contentTypeIt != response.getHeaders().end() && std::any_of(modifyableTypes.begin(),
+                        modifyableTypes.end(),
+                        [&contentTypeIt] (std::string type) {return contentTypeIt->second.find(type) != std::string::npos;})) {
+                response.readContent(server);
+                transformations.transformResponse(response);
+                response.fixContentLength();
+                response.write(client);
+            } else {
+                response.writeRequestLine(client);
+                response.writeHeaders(client);
+
+                response.streamContent(server, client);
+        }
+
+        if (response.getHeaders()["connection"] == "close" ||
+                request.getHeaders()["connection"] == "close" ||
+                !server.canWrite())
+            break;
+        }
+
+    } catch (std::runtime_error er) {
+        std::cerr << er.what() << std::endl;
     }
-
 }

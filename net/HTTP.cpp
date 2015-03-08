@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iostream>
 
+
 void net::HTTP::read(net::TCPSocket &socket) {
     readRequestLine(socket);
     readHeaders(socket);
@@ -27,7 +28,7 @@ void net::HTTP::readHeaders(net::TCPSocket &socket) {
 
         int pos = line.find_first_of(":");
         if (pos == std::string::npos)
-            throw std::runtime_error("Invalid header (" + line + ")");
+            throw std::runtime_error("Invalid header (" + line + ") " + requestLine);
 
         std::string header = trim(line.substr(0, pos));
 
@@ -70,12 +71,8 @@ void net::HTTP::readContent(net::TCPSocket &socket) {
 
 void net::HTTP::write(net::TCPSocket &socket) {
     writeRequestLine(socket);
-//    std::cout << requestLine << std::endl;
     writeHeaders(socket);
-//    for (auto &it : headers)
-//        std::cout << it.first + ": " + it.second << std::endl;
     writeContent(socket);
-//    std::cout << std::endl;
 }
 
 void net::HTTP::writeRequestLine(net::TCPSocket &socket) {
@@ -132,6 +129,10 @@ void net::HTTP::fixContentLength() {
 
 std::map<std::string, std::string> & net::HTTP::getHeaders() {
     return headers;
+}
+
+std::string & net::HTTP::getRequestLine() {
+    return requestLine;
 }
 
 std::string & net::HTTP::getContent() {

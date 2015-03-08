@@ -41,11 +41,7 @@ int main(int argc, char **argv) {
                 });
     }
 
-    try {
-        Server s(8080);
-        s.run();
-    } catch(char const * ex) {
-        std::cout << ex << std::endl;
-    }
+    Server s(8080);
+    s.run();
     return 0;
 }

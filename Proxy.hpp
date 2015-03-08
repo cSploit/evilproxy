@@ -14,5 +14,6 @@ class Proxy
 
         static std::vector<std::string> modifyableTypes;
         net::TCPSocket client;
+        net::TCPSocket server;
         HTTPTransform &transformations;
 };

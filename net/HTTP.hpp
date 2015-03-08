@@ -23,6 +23,7 @@ namespace net
             void fixContentLength();
 
             std::map<std::string, std::string> & getHeaders();
+            std::string & getRequestLine();
             std::string & getContent();
         private:
             enum class Type;
