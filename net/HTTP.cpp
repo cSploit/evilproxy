@@ -139,14 +139,21 @@ std::string & net::HTTP::getContent() {
     return content;
 }
 
-net::HTTP::Type net::HTTP::getType() {
+std::string net::HTTP::getUrl() const {
+    auto a = requestLine.find_first_of(' ') + 1;
+    auto url = requestLine.substr(a);
+    url = url.substr(0, url.find_first_of(' '));
+    return headers.find("host")->second + url;
+}
+
+net::HTTP::Type net::HTTP::getType() const {
     if (requestLine.substr(0, 4) == "HTTP")
         return net::HTTP::Type::Response;
     else
         return net::HTTP::Type::Request;
 }
 
-bool net::HTTP::isChunkedEncoded() {
+bool net::HTTP::isChunkedEncoded() const {
     auto transfer = headers.find("transfer-encoding");
     return (transfer != headers.end() && transfer->second == "chunked");
 }

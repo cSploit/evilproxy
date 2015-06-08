@@ -25,11 +25,13 @@ namespace net
             std::map<std::string, std::string> & getHeaders();
             std::string & getRequestLine();
             std::string & getContent();
-        private:
-            enum class Type;
+            std::string getUrl() const;
 
-            Type getType();
-            bool isChunkedEncoded();
+            enum class Type {Request, Response};
+            Type getType() const;
+        private:
+
+            bool isChunkedEncoded() const;
 
             std::string trim(std::string str);
 
@@ -37,7 +39,6 @@ namespace net
             std::map<std::string, std::string> headers;
             std::string content;
 
-            enum class Type {Request, Response};
     };
 
 }

@@ -9,7 +9,7 @@
 
 std::vector<std::string> Proxy::modifyableTypes = {"/html", "/css", "/javascript", "/x-javascript"};
 
-Proxy::Proxy(net::TCPSocket &&socket, HTTPTransform &transformations) :
+Proxy::Proxy(net::TCPSocket &&socket, std::shared_ptr<HTTPTransform> transformations) :
         client(std::move(socket)), transformations(transformations) {
 }
 
@@ -32,8 +32,9 @@ void Proxy::run() {
             if (host.empty()) {
                 host = request.getHeaders()["host"];
                 server.connect(host, "80");
-                std::cout << host << std::endl;
             }
+
+            transformations->transformRequest(request);
 
             request.write(server);
 
@@ -49,7 +50,7 @@ void Proxy::run() {
                         modifyableTypes.end(),
                         [&contentTypeIt] (std::string type) {return contentTypeIt->second.find(type) != std::string::npos;})) {
                 response.readContent(server);
-                transformations.transformResponse(response);
+                transformations->transformResponse(response);
                 response.fixContentLength();
                 response.write(client);
             } else {
